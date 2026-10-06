@@ -1,0 +1,10 @@
+resources:
+  - ../base
+# CI (project 02 promote.yml) updates this digest with a commit/PR. That commit IS the deploy record.
+# Rollback = git revert.
+images:
+  - name: ghcr.io/REPLACE_ORG/sample-service
+    digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
+replicas:
+  - name: sample-service
+    count: 4

@@ -1,0 +1,9 @@
+{
+  "identities": [
+    {
+      "name": "backup",
+      "credentials": [{ "accessKey": "backup", "secretKey": "backup-secret-lab-only" }],
+      "actions": ["Read", "Write", "List", "Tagging", "Admin"]
+    }
+  ]
+}

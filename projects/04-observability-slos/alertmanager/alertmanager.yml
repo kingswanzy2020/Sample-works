@@ -1,0 +1,22 @@
+route:
+  receiver: default
+  group_by: [alertname]
+  group_wait: 30s
+  repeat_interval: 4h
+  routes:
+    - matchers: [severity="page"]
+      receiver: page
+    - matchers: [severity="ticket"]
+      receiver: ticket
+
+receivers:
+  # Replace with a real destination: a Slack incoming webhook, PagerDuty, or a small
+  # webhook logger. Until then, view alerts at http://localhost:9093.
+  - name: default
+  - name: page
+  - name: ticket
+
+inhibit_rules:
+  # If the target is down, don't also page for its error budget.
+  - source_matchers: [alertname="TargetDown"]
+    target_matchers: [alertname=~"ErrorBudget.*"]

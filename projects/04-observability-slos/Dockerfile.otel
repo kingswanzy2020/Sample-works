@@ -1,0 +1,13 @@
+# syntax=docker/dockerfile:1.7
+# The shared app plus OpenTelemetry auto-instrumentation, so the app code stays unchanged.
+# Built with `additional_contexts: app=...` from docker-compose.yml.
+FROM python:3.12-slim
+WORKDIR /app
+COPY --from=app requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt \
+      opentelemetry-distro opentelemetry-exporter-otlp \
+ && opentelemetry-bootstrap -a install
+COPY --from=app src ./src
+RUN useradd --uid 10001 app
+USER 10001
+CMD ["opentelemetry-instrument", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]

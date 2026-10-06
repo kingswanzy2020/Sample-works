@@ -1,0 +1,35 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-requests-and-probes
+spec:
+  validationFailureAction: Audit
+  background: true
+  rules:
+    - name: requests
+      match:
+        any:
+          - resources: { kinds: [Deployment] }
+      validate:
+        message: "Containers must set CPU and memory requests (scheduling and cost depend on them)."
+        pattern:
+          spec:
+            template:
+              spec:
+                containers:
+                  - resources:
+                      requests:
+                        cpu: "?*"
+                        memory: "?*"
+    - name: readiness
+      match:
+        any:
+          - resources: { kinds: [Deployment] }
+      validate:
+        message: "Containers must define a readinessProbe (zero-downtime deploys depend on it)."
+        pattern:
+          spec:
+            template:
+              spec:
+                containers:
+                  - readinessProbe: {}

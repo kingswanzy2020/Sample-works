@@ -1,0 +1,51 @@
+# Backstage Software Template: "create a new service on the paved road".
+# https://backstage.io/docs/features/software-templates/
+# The skeleton/ folder is what every new service starts with.
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: python-service
+  title: Python HTTP service (paved road)
+  description: Container, CI, signing, deploy manifests, probes, metrics and ADRs, all wired up.
+spec:
+  owner: platform-team
+  type: service
+  parameters:
+    - title: Service details
+      required: [name, owner]
+      properties:
+        name:
+          type: string
+          pattern: "^[a-z][a-z0-9-]{2,30}$"
+        owner:
+          type: string
+          description: Team that is on call for this service
+          ui:field: OwnerPicker
+        description:
+          type: string
+  steps:
+    - id: fetch
+      name: Render skeleton
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          name: ${{ parameters.name }}
+          owner: ${{ parameters.owner }}
+          description: ${{ parameters.description }}
+    - id: publish
+      name: Create repository
+      action: publish:github
+      input:
+        repoUrl: github.com?owner=REPLACE_ORG&repo=${{ parameters.name }}
+        defaultBranch: main
+    - id: register
+      name: Register in catalog
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
+        catalogInfoPath: /catalog-info.yaml
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps.publish.output.remoteUrl }}

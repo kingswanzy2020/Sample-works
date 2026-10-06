@@ -1,0 +1,18 @@
+# Requires KEDA (https://keda.sh) and Prometheus scraping the app (project 04 / kube-prometheus-stack).
+# Scales on request rate, a leading indicator, instead of CPU, a lagging one.
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: app
+  namespace: scale
+spec:
+  scaleTargetRef: { name: app }
+  minReplicaCount: 1    # KEDA can also go to 0 for queue workers: cheapest, but adds cold-start latency
+  maxReplicaCount: 12
+  cooldownPeriod: 300
+  triggers:
+    - type: prometheus
+      metadata:
+        serverAddress: http://prometheus.monitoring.svc:9090
+        query: sum(rate(http_requests_total{namespace="scale",route!~"/metrics|/healthz|/readyz"}[1m]))
+        threshold: "40" # target req/s per pod: find it with load/find-capacity.js

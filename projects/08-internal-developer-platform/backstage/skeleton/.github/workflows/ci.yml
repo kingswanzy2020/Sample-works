@@ -1,0 +1,16 @@
+name: ci
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  ci:
+    # DECISION (platform ADR-0001): services call the platform's reusable workflow, so improvements
+    # roll out to every service at once. Teams can add jobs, but can't skip the security steps.
+    uses: REPLACE_ORG/platform/.github/workflows/service-ci.yml@v1
+    with:
+      service-name: ${{ values.name }}
+    permissions:
+      contents: read
+      packages: write
+      id-token: write

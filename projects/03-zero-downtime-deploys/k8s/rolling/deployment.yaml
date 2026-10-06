@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app
+  namespace: zdd
+spec:
+  replicas: 4
+  revisionHistoryLimit: 5
+  # DECISION (ADR-0001): rolling update. maxUnavailable: 0 keeps full capacity during the
+  # rollout, at the cost of needing room for one extra pod (maxSurge).
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  minReadySeconds: 5 # a pod must stay ready this long before it counts as available
+  selector:
+    matchLabels: { app: sample }
+  template:
+    metadata:
+      labels: { app: sample }
+    spec:
+      # Must exceed preStop sleep + app graceful shutdown (uvicorn --timeout-graceful-shutdown 20).
+      terminationGracePeriodSeconds: 35
+      containers:
+        - name: app
+          image: sample-service:v1
+          ports: [{ name: http, containerPort: 8000 }]
+          env:
+            - { name: DATABASE_URL, value: "postgresql://app:app@postgres:5432/app" }
+          # Readiness gates traffic. Liveness only restarts a hung process.
+          # Pointing liveness at /readyz would restart every pod when the DB blips (break-it experiment 3).
+          readinessProbe:
+            httpGet: { path: /readyz, port: http }
+            periodSeconds: 2
+            failureThreshold: 2
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 10
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              # Endpoints removal is asynchronous: keep serving for a few seconds after
+              # SIGTERM is scheduled so kube-proxy/ingress stop sending us new requests.
+              exec: { command: ["sleep", "10"] }
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits: { memory: 256Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app
+  namespace: zdd
+spec:
+  type: NodePort
+  selector: { app: sample }
+  ports: [{ port: 80, targetPort: http, nodePort: 30080 }]
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: app
+  namespace: zdd
+spec:
+  minAvailable: 3 # protects against node drains, not against bad deploys
+  selector:
+    matchLabels: { app: sample }

@@ -1,0 +1,7 @@
+# SOPS + age: encrypted secrets that live in git.
+#   age-keygen -o ~/.config/sops/age/keys.txt
+#   Put the public key below, then:  sops -e secrets.example.yaml > secrets.staging.enc.yaml
+# DECISION (ADR-0001): who holds the private key, and how is it revoked when someone leaves?
+creation_rules:
+  - path_regex: .*\.enc\.yaml$
+    age: REPLACE_WITH_YOUR_AGE_PUBLIC_KEY

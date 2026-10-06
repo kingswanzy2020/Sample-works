@@ -1,0 +1,88 @@
+# Full local observability stack around the sample service.
+# APP_DIR points at the shared app: ./app in an extracted repo, ../../app inside the roadmap repo.
+# NOTE: image tags were current when this starter was written. Bumping them is part of the work.
+services:
+  db:
+    image: postgres:16
+    environment: { POSTGRES_USER: app, POSTGRES_PASSWORD: app, POSTGRES_DB: app }
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U app"], interval: 2s, retries: 15 }
+
+  # Sits between app and db so you can inject latency/failures (docs/break-it.md).
+  toxiproxy:
+    image: ghcr.io/shopify/toxiproxy:2.11.0
+    command: ["-host=0.0.0.0", "-config=/config/toxiproxy.json"]
+    volumes: ["./toxiproxy:/config:ro"]
+    ports: ["8474:8474"] # toxiproxy API
+    depends_on: { db: { condition: service_healthy } }
+
+  migrate:
+    build: { context: "${APP_DIR:-./app}" }
+    command: ["python", "-m", "src.migrate"]
+    environment: { DATABASE_URL: "postgresql://app:app@db:5432/app" }
+    depends_on: { db: { condition: service_healthy } }
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.otel
+      additional_contexts:
+        app: "${APP_DIR:-./app}"
+    environment:
+      DATABASE_URL: postgresql://app:app@toxiproxy:5433/app
+      APP_VERSION: obs-lab
+      OTEL_SERVICE_NAME: sample-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none # metrics come from /metrics (Prometheus pull). See ADR-0003.
+      OTEL_LOGS_EXPORTER: none
+      # DECISION (ADR-0004): head sampling ratio. 1.0 in the lab; what in prod?
+      OTEL_TRACES_SAMPLER: parentbased_traceidratio
+      OTEL_TRACES_SAMPLER_ARG: "1.0"
+    ports: ["8000:8000"]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      toxiproxy: { condition: service_started }
+
+  prometheus:
+    image: prom/prometheus:v3.1.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=7d # DECISION (ADR-0005): retention
+      - --web.enable-lifecycle
+    volumes: ["./prometheus:/etc/prometheus:ro"]
+    ports: ["9090:9090"]
+
+  alertmanager:
+    image: prom/alertmanager:v0.28.0
+    volumes: ["./alertmanager:/etc/alertmanager:ro"]
+    ports: ["9093:9093"]
+
+  loki:
+    image: grafana/loki:3.3.2
+    command: ["-config.file=/etc/loki/local-config.yaml"]
+    ports: ["3100:3100"]
+
+  alloy: # ships container logs to Loki
+    image: grafana/alloy:v1.5.1
+    command: ["run", "/etc/alloy/config.alloy", "--server.http.listen-addr=0.0.0.0:12345"]
+    volumes:
+      - ./alloy:/etc/alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on: [loki]
+
+  tempo:
+    image: grafana/tempo:2.6.1
+    command: ["-config.file=/etc/tempo/tempo.yaml"]
+    volumes: ["./tempo:/etc/tempo:ro"]
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports: ["3000:3000"]
+    depends_on: [prometheus, loki, tempo]

@@ -1,0 +1,11 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Lab-only placeholders that are not real secrets"
+paths = [
+  '''sops/secrets\.example\.yaml''',
+]
+regexes = [
+  '''postgresql://app:app@''',
+]

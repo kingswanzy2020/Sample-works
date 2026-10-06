@@ -1,0 +1,19 @@
+# Requires Kyverno (https://kyverno.io). Start in Audit; move to Enforce once violations are fixed (ADR-0003).
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-team-label
+spec:
+  validationFailureAction: Audit
+  background: true
+  rules:
+    - name: team-label
+      match:
+        any:
+          - resources: { kinds: [Deployment, StatefulSet] }
+      validate:
+        message: "Every workload needs a `team` label so cost and incidents have an owner."
+        pattern:
+          metadata:
+            labels:
+              team: "?*"
