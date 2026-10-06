@@ -3,6 +3,8 @@
 > **Problem:** Secrets live in `.env` files and CI variables. They never rotate.
 > An ex-employee still knows the production database password.
 
+**Need help while building?** See [`docs/build-plan.md`](docs/build-plan.md): tasks with a goal and a "done when" check, hints hidden in levels (nudge → concept → docs), and a diagnosis table. It never gives you the full solution.
+
 ## Decisions this project proves you can make
 
 1. **Where secrets live:** a secrets store (Vault / cloud manager) vs encrypted in git (SOPS).

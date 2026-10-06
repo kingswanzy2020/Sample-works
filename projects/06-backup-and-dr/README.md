@@ -3,6 +3,8 @@
 > **Problem:** "We have backups." Nobody has ever restored one. Nobody knows how long
 > it would take, or how much data would be lost.
 
+**Need help while building?** See [`docs/build-plan.md`](docs/build-plan.md): tasks with a goal and a "done when" check, hints hidden in levels (nudge → concept → docs), and a diagnosis table. It never gives you the full solution.
+
 ## Decisions this project proves you can make
 
 1. **RPO and RTO:** how much data loss and downtime are acceptable, per data store, and who agreed to it.

@@ -3,6 +3,8 @@
 > **Problem:** Users say the app is slow. Logs exist, but nobody can find the cause.
 > Alerts fire on CPU at 3am and nobody knows if users are affected.
 
+**Need help while building?** See [`docs/build-plan.md`](docs/build-plan.md): tasks with a goal and a "done when" check, hints hidden in levels (nudge → concept → docs), and a diagnosis table. It never gives you the full solution.
+
 ## Decisions this project proves you can make
 
 1. **SLIs and SLOs:** what "good" means for users, in numbers.

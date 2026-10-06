@@ -6,6 +6,8 @@
 This is the capstone: it packages the decisions from projects 01–07 so other teams get them by default.
 It is the most senior-sounding project, because it is about **other engineers' experience**, not just infrastructure.
 
+**Need help while building?** See [`docs/build-plan.md`](docs/build-plan.md): tasks with a goal and a "done when" check, hints hidden in levels (nudge → concept → docs), and a diagnosis table. It never gives you the full solution.
+
 ## Decisions this project proves you can make
 
 1. **How much to abstract:** templates, a platform, or a full PaaS. Where can teams leave the defaults?

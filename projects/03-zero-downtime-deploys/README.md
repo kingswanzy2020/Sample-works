@@ -3,6 +3,8 @@
 > **Problem:** Every deploy causes 30–60 seconds of 502s, and database migrations
 > sometimes break the version that is still running.
 
+**Need help while building?** See [`docs/build-plan.md`](docs/build-plan.md): tasks with a goal and a "done when" check, hints hidden in levels (nudge → concept → docs), and a diagnosis table. It never gives you the full solution.
+
 ## Decisions this project proves you can make
 
 1. **Rollout strategy:** rolling vs blue/green vs canary, for *this* app and budget.

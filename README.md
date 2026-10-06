@@ -20,6 +20,7 @@ Every project comes with:
 | `docs/break-it.md` | Failure experiments with a hypothesis, procedure and what to measure |
 | `docs/postmortems/` | Where each break-it experiment gets written up |
 | `docs/scale.md` | "What I'd do at 10× / 100×", the closing line of your interview story |
+| `docs/build-plan.md` | Tasks, levelled hints and a diagnosis table for when you're stuck |
 
 ## The projects
 
@@ -64,6 +65,17 @@ templates/
   break-it-template.md
 scripts/new-project-repo.sh
 ```
+
+## When you need help
+
+Each project has a **`docs/build-plan.md`**. It's a guide for when you're stuck, not a walkthrough:
+
+- Every task gives a **goal** and a **"done when"** check, never the steps.
+- **Hints are hidden in levels:** Hint 1 is a nudge, Hint 2 names the concept or tool, Hint 3 links the docs. Open one at a time, after a real attempt.
+- **"Depends on your ADR"** notes tell you what to think about for the option you chose.
+- A **"Stuck? Diagnose before you search"** table gives the questions to ask yourself for common failures.
+
+Keep a short journal of which hints you needed. It's honest evidence of what you learned.
 
 ## How to work each project
 
