@@ -67,6 +67,19 @@ docs/cost-model.md    # the worksheet that turns measurements into dollars
 ### Document
 - [ ] `docs/cost-model.md` filled in, with a before/after graph.
 
+## How this project connects
+
+| Direction | Project | What flows |
+|-----------|---------|------------|
+| Uses | `app/` | The `/work` endpoint as a CPU-bound workload |
+| Uses | [03 Zero-downtime](../03-zero-downtime-deploys/) | Same kind setup; PDB and graceful-shutdown lessons matter during scale-down and spot interruptions |
+| Uses | [04 Observability](../04-observability-slos/) | Prometheus, for KEDA request-rate scaling and OpenCost |
+| Uses | [01 IaC](../01-iac-multi-env/) | Tags that budgets and cost allocation filter on |
+| Feeds | [08 Platform](../08-internal-developer-platform/) | Required requests and owner labels become platform policies |
+| Related, not repeated | [10 Linux latency](../10-linux-performance-latency/) | Here CPU limits are about cost and throughput in Kubernetes. 10 goes down to cores, IRQs and the kernel |
+
+**Not in this project:** host-level latency tuning (10), the platform template (08).
+
 ## ADRs
 
 | # | Decision | Status |

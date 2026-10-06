@@ -1,0 +1,6 @@
+# TODO (you): turn project 10's proven tuning list into tasks.
+# Each setting should be traceable to a tuning-log row in project 10.
+# Containers can't apply kernel settings; use VMs for the real run, containers for --check.
+- name: Placeholder so the role runs
+  ansible.builtin.debug:
+    msg: "latency_tuning role not written yet"

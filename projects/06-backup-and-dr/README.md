@@ -72,6 +72,19 @@ scripts/restore-drill.sh          # reports measured RTO and rows lost (should b
 ### Document
 - [ ] A table of documented vs measured RTO/RPO, plus the game day postmortem.
 
+## How this project connects
+
+| Direction | Project | What flows |
+|-----------|---------|------------|
+| Uses | `app/` | The data being protected |
+| Uses | [01 IaC](../01-iac-multi-env/) | RDS PITR; the region-loss game day rebuilds 01's infrastructure |
+| Uses | [05 Secrets](../05-secrets-and-rotation/) | Secrets must be part of what you can recover |
+| Feeds | [12 Incidents](../12-incident-response/) | Restore drills and the region game day as incident-response practice |
+| Feeds | [16 Reliability reporting](../16-reliability-reporting/) | Measured RTO/RPO are reliability facts worth reporting |
+| Related, not repeated | [09 Kafka](../09-kafka-streaming-reliability/) | Kafka replication and retention are **not** backups. That's a point to make in both projects |
+
+**Not in this project:** streaming durability (09), incident process (12).
+
 ## ADRs
 
 | # | Decision | Status |

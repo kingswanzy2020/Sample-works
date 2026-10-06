@@ -65,6 +65,18 @@ docs/adr/  docs/break-it.md  docs/scale.md  docs/postmortems/
 - [ ] A before/after chart of CI duration.
 - [ ] Interview story below.
 
+## How this project connects
+
+| Direction | Project | What flows |
+|-----------|---------|------------|
+| Uses | `app/` | The service being built, tested and shipped |
+| Uses | [05 Secrets](../05-secrets-and-rotation/) | OIDC instead of stored keys; secret scanning complements this pipeline |
+| Feeds | [03 Zero-downtime](../03-zero-downtime-deploys/) | Signed images promoted by digest are what gets rolled out |
+| Feeds | [08 Platform](../08-internal-developer-platform/) | 08 turns this pipeline into a versioned, reusable workflow for many services |
+| Feeds | [12 Incidents](../12-incident-response/) | "Recent deploy?" is a standard triage question; deploy records answer it |
+
+**Not in this project:** deploy strategy (03), sharing the pipeline across services (08).
+
 ## ADRs
 
 | # | Decision | Status |

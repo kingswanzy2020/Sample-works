@@ -1,0 +1,14 @@
+# SLOs for the landscape, in a deliberately simple, tool-neutral format that the report generator reads.
+# DECISION (ADR-0002): keep this format, or generate it from / translate it to Sloth, Pyrra or OpenSLO.
+#
+# One example is filled in. Writing the rest, and choosing their targets, is your work (ADR-0001, ADR-0003).
+
+slos:
+  - service: order-gateway
+    name: availability
+    objective: 0.999                 # placeholder: justify your own number in ADR-0001
+    window: 7d                       # DECISION (ADR-0003): rolling window length
+    trading_hours_only: false        # DECISION (ADR-0003): measure only while markets are open?
+    sli:
+      good: sum(increase(svc_requests_total{service="order-gateway",code!~"5.."}[{{window}}]))
+      total: sum(increase(svc_requests_total{service="order-gateway"}[{{window}}]))

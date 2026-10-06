@@ -1,0 +1,11 @@
+# TODO (you): the baseline every server must have. Decide the contents in ADR-0001 / your README.
+# Requirements for every task you write:
+#   - idempotent: running twice changes nothing the second time
+#   - safe in --check mode
+#   - tagged, so parts can be run alone
+#
+# Ideas to decide on (not a checklist to copy): timezone, admin users, SSH hardening,
+# sysctl baseline, required packages, removing what shouldn't be there, a managed motd.
+- name: Placeholder so the role runs
+  ansible.builtin.debug:
+    msg: "baseline role not written yet"

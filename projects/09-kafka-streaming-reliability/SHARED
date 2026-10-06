@@ -1,0 +1,2 @@
+# Shared directories copied into the extracted repo (see scripts/new-project-repo.sh).
+# This project is standalone; it doesn't need the sample app.

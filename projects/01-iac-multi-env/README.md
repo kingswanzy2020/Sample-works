@@ -76,6 +76,18 @@ docs/scale.md         # what you would do at 10x / 100x
 - [ ] Write [`docs/scale.md`](docs/scale.md) in your own words.
 - [ ] Fill in the interview story below.
 
+## How this project connects
+
+| Direction | Project | What flows |
+|-----------|---------|------------|
+| Uses | [05 Secrets](../05-secrets-and-rotation/) | Its `terraform/github-oidc` creates the plan/apply roles your PR workflow assumes (Phase 3.5) |
+| Feeds | [05 Secrets](../05-secrets-and-rotation/) | The RDS-managed master secret (`db_secret_arn` output) is what External Secrets syncs there |
+| Feeds | [06 Backup + DR](../06-backup-and-dr/) | RDS automated backups enable point-in-time restore; the region-loss game day rebuilds *this* code elsewhere |
+| Feeds | [07 Cost](../07-cost-aware-autoscaling/) | `default_tags` (Project, Environment) are what the budget filters on |
+| Boundary with | [11 Ansible](../11-ansible-fleet-config/) | 01 **provisions** infrastructure. 11 **configures** hosts. Neither does the other's job |
+
+**Not in this project:** host configuration (11), secrets management in depth (05), backups (06).
+
 ## ADRs
 
 | # | Decision | Status |

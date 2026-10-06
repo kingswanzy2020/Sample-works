@@ -1,0 +1,39 @@
+# The "existing" alerting of the simulated platform. It is DELIBERATELY uneven:
+#   - some services have alerts, some have none (project 15 finds this)
+#   - one alert is noisy (fires on tiny blips) and one has no runbook (project 17 finds this)
+#   - every alert is bare: no owner or context, just a name (project 14 enriches them)
+groups:
+  - name: fleet
+    rules:
+      - alert: HighErrorRate
+        expr: |
+          sum by (service) (rate(svc_requests_total{code="500",service=~"order-gateway|price-feed|risk-engine"}[5m]))
+          / sum by (service) (rate(svc_requests_total{service=~"order-gateway|price-feed|risk-engine"}[5m])) > 0.05
+        for: 2m
+        labels: { severity: page }
+        annotations:
+          summary: "{{ $labels.service }} error rate {{ $value | humanizePercentage }}"
+          runbook_url: "runbooks/{{ $labels.service }}.md"
+
+      - alert: AnyErrors   # noisy on purpose
+        expr: sum by (service) (increase(svc_requests_total{code="500",service="positions-api"}[1m])) > 0
+        labels: { severity: page }
+        annotations:
+          summary: "{{ $labels.service }} returned an error"
+
+      - alert: KafkaDegraded
+        expr: |
+          sum(rate(svc_requests_total{code="500",service="kafka"}[5m]))
+          / sum(rate(svc_requests_total{service="kafka"}[5m])) > 0.05
+        for: 2m
+        labels: { severity: page, service: kafka }
+        annotations:
+          summary: "kafka error rate {{ $value | humanizePercentage }}"
+          runbook_url: "runbooks/kafka.md"
+
+      - alert: ServiceDown
+        expr: svc_up == 0
+        for: 1m
+        labels: { severity: page }
+        annotations:
+          summary: "{{ $labels.service }} is down"

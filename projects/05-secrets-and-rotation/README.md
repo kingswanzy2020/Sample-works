@@ -74,6 +74,18 @@ docker compose exec app cat /secrets/database_url  # note the generated username
 - [ ] Diagram of the trust chain: GitHub → AWS role → Secrets Manager / Vault → DB.
 - [ ] `docs/offboarding-runbook.md`.
 
+## How this project connects
+
+| Direction | Project | What flows |
+|-----------|---------|------------|
+| Uses | [01 IaC](../01-iac-multi-env/) | The RDS-managed secret; the AWS account |
+| Feeds | [01 IaC](../01-iac-multi-env/), [02 CI/CD](../02-cicd-fast-and-safe/) | OIDC roles replace stored AWS keys in their workflows |
+| Feeds | [06 Backup + DR](../06-backup-and-dr/) | Secrets must be recoverable in a disaster too |
+| Feeds | [11 Ansible](../11-ansible-fleet-config/) | Secrets in playbooks: Ansible Vault vs a lookup from your store |
+| Feeds | [12 Incidents](../12-incident-response/) | "Vault is down" is a strong game-day scenario |
+
+**Not in this project:** application deployment (03), backups (06).
+
 ## ADRs
 
 | # | Decision | Status |

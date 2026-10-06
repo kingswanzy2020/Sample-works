@@ -1,0 +1,44 @@
+# Game-day scenarios for the landscape simulator. The GAME MASTER reads this file. Responders must NOT.
+# Each scenario injects faults via the simulator API, optionally in steps.
+# Add your own, including ones from earlier projects' break-it experiments.
+
+scenarios:
+  - id: kafka-degraded
+    title: Kafka platform degradation
+    root_cause: "kafka errors → leak into price-feed, order-gateway, positions-api"
+    expected_signals: [KafkaDegraded, HighErrorRate on several services]
+    steps:
+      - { after_s: 0, fault: { service: kafka, error_rate: 0.25 } }
+
+  - id: risk-engine-down
+    title: Unowned tier-1 service goes down
+    root_cause: "risk-engine down; it has no owner or on-call in the catalog"
+    expected_signals: [ServiceDown risk-engine, HighErrorRate order-gateway]
+    steps:
+      - { after_s: 0, fault: { service: risk-engine, down: true } }
+
+  - id: slow-postgres
+    title: Database latency, no errors
+    root_cause: "postgres latency 300ms → slow risk-engine, positions-api, auth, reporting"
+    expected_signals: ["none of the existing alerts cover latency: will anyone notice?"]
+    steps:
+      - { after_s: 0, fault: { service: postgres, latency_ms: 300 } }
+
+  - id: double-trouble
+    title: Two unrelated incidents at once
+    root_cause: "price-feed errors (its own fault) AND, 3 minutes later, auth errors"
+    expected_signals: [HighErrorRate price-feed, later auth errors with no alert]
+    steps:
+      - { after_s: 0,   fault: { service: price-feed, error_rate: 0.15 } }
+      - { after_s: 180, fault: { service: auth, error_rate: 0.3 } }
+
+  - id: flapping
+    title: Intermittent dependency
+    root_cause: "kafka errors on and off every 90s"
+    expected_signals: [alerts firing and resolving repeatedly]
+    steps:
+      - { after_s: 0,   fault: { service: kafka, error_rate: 0.2 } }
+      - { after_s: 90,  clear: true }
+      - { after_s: 180, fault: { service: kafka, error_rate: 0.2 } }
+      - { after_s: 270, clear: true }
+      - { after_s: 360, fault: { service: kafka, error_rate: 0.2 } }

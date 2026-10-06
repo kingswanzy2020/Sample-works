@@ -1,0 +1,12 @@
+# The whole fleet's desired state. Run with --check --diff first.
+- name: Baseline for every server
+  hosts: all
+  become: true
+  roles:
+    - baseline
+
+- name: Latency tuning for trading servers (needs real VMs to fully apply; see README)
+  hosts: trading
+  become: true
+  roles:
+    - latency_tuning

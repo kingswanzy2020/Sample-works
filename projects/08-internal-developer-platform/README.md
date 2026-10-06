@@ -65,6 +65,20 @@ scripts/scorecard.sh                   # how far is a repo from the paved road?
 ### Document
 - [ ] A one-page "platform product brief": users, problem, success metrics, what's **out** of scope.
 
+## How this project connects
+
+| Direction | Project | What flows |
+|-----------|---------|------------|
+| Uses | [02 CI/CD](../02-cicd-fast-and-safe/) | The pipeline, generalized into a reusable workflow |
+| Uses | [03 Zero-downtime](../03-zero-downtime-deploys/) | Probes, preStop and PDB defaults in the template |
+| Uses | [05 Secrets](../05-secrets-and-rotation/) | Signing identity for the signed-images policy |
+| Uses | [07 Cost](../07-cost-aware-autoscaling/) | Requests and owner labels enforced by policy |
+| Feeds | [15 Coverage audit](../15-monitoring-coverage-audit/) | `catalog-info.yaml` owners are a natural source for a service catalog |
+| Feeds | [17 Governance](../17-reliability-governance/) | Ownership data and scorecard ideas |
+| Boundary with | [15 Coverage audit](../15-monitoring-coverage-audit/) | 08's scorecard checks a repo's **files**. 15 checks **live** monitoring |
+
+**Not in this project:** live monitoring audits (15), governance of team behaviour (17).
+
 ## ADRs
 
 | # | Decision | Status |
