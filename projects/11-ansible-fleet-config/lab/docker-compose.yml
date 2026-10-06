@@ -1,0 +1,13 @@
+# Six lab servers in three roles. Ports 2221–2226 on localhost map to each server's SSH.
+x-node: &node
+  build: .
+  volumes: ["./.ssh/lab_key.pub:/lab-key.pub:ro"]
+  restart: unless-stopped
+
+services:
+  trading-01:    { <<: *node, hostname: trading-01,    ports: ["2221:22"] }
+  trading-02:    { <<: *node, hostname: trading-02,    ports: ["2222:22"] }
+  kafka-01:      { <<: *node, hostname: kafka-01,      ports: ["2223:22"] }
+  kafka-02:      { <<: *node, hostname: kafka-02,      ports: ["2224:22"] }
+  monitoring-01: { <<: *node, hostname: monitoring-01, ports: ["2225:22"] }
+  monitoring-02: { <<: *node, hostname: monitoring-02, ports: ["2226:22"] }

@@ -6,7 +6,8 @@
 #
 # The new repo gets:
 #   - everything in projects/<NN>-*/        (at the repo root)
-#   - app/                                   (the shared sample service)
+#   - the shared directories listed in the project's SHARED file
+#     (default: app/, the shared sample service; some projects also need landscape/)
 #   - templates/                             (ADR, postmortem, break-it)
 set -euo pipefail
 
@@ -32,9 +33,16 @@ if [[ -e "$dest" && -n "$(ls -A "$dest" 2>/dev/null)" ]]; then
   exit 1
 fi
 
+# Shared directories a project needs are listed in its SHARED file (default: app).
+shared="app"
+[[ -f "$src/SHARED" ]] && shared="$( (grep -v "^#" "$src/SHARED" || true) | xargs)"
+
 mkdir -p "$dest"
 cp -R "$src"/. "$dest"/
-cp -R "$root/app" "$dest/app"
+rm -f "$dest/SHARED"
+for dir in $shared; do
+  cp -R "$root/$dir" "$dest/$dir"
+done
 cp -R "$root/templates" "$dest/templates"
 
 cd "$dest"

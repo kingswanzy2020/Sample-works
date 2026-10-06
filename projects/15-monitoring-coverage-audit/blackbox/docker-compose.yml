@@ -1,0 +1,15 @@
+# Runs the blackbox exporter on the LANDSCAPE's network, so it can reach the simulator.
+# Start the landscape first (its default network is called landscape_default).
+# Wiring Prometheus to scrape it (one job per probed service, or relabelling) is your task.
+services:
+  blackbox:
+    image: prom/blackbox-exporter:v0.25.0
+    command: ["--config.file=/etc/blackbox/blackbox.yml"]
+    volumes: ["./blackbox.yml:/etc/blackbox/blackbox.yml:ro"]
+    ports: ["9115:9115"]
+    networks: [landscape]
+
+networks:
+  landscape:
+    name: landscape_default
+    external: true

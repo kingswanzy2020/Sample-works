@@ -4,7 +4,7 @@ A DevOps portfolio built on decisions, not tool lists.
 
 > **Build. Test. Break. Decide. Improve. Document.**
 
-This repo is the hub: a roadmap of eight DevOps projects. Each one starts from a real problem and is built
+This repo is the hub: a roadmap of seventeen DevOps and SRE projects. Each one starts from a real problem and is built
 to answer one question: **"What decisions do I want this project to prove I can make?"**
 
 The goal is to say more than *"I used Docker, Terraform and GitHub Actions"* in an interview. The goal is:
@@ -26,8 +26,14 @@ Every project comes with:
 
 ## The projects
 
-Build them in this order. Each one is an **evolution of the same system** (one app, growing up),
-so each has a natural "why": *"Once I could deploy, I couldn't tell if deploys were healthy, so I added observability."*
+The projects come in three tracks. Many of them connect: one produces something the next one uses.
+**[PROJECT-MAP.md](PROJECT-MAP.md)** shows every connection, the boundaries that keep projects from repeating each other,
+and a suggested order. Each project README also has a "How this project connects" section.
+
+### Track A: build and run one system well (01–08)
+
+Each one is an **evolution of the same system** (one app, growing up), so each has a natural "why":
+*"Once I could deploy, I couldn't tell if deploys were healthy, so I added observability."*
 
 | # | Project | The problem | Key decisions | Runs on |
 |---|---------|-------------|---------------|---------|
@@ -43,6 +49,28 @@ so each has a natural "why": *"Once I could deploy, I couldn't tell if deploys w
 > In my earlier list the numbering was different. Here the folders follow the **build order**:
 > IaC first (foundation), the platform last (it packages everything else).
 
+### Track B: the systems underneath (09–11)
+
+| # | Project | The problem | Key decisions | Runs on |
+|---|---------|-------------|---------------|---------|
+| 09 | [Reliable Kafka streaming](projects/09-kafka-streaming-reliability/) | Broker failures lose or duplicate ticks; lag grows silently | acks/ISR/replication, delivery semantics, partitioning, freshness SLO, run vs buy | Docker Compose |
+| 10 | [Linux performance and tail latency](projects/10-linux-performance-latency/) | p99.9 spikes while averages look fine | Measurement method, CPU isolation, kernel tuning scope, containers vs bare metal | A Linux host / VM |
+| 11 | [Ansible for a hybrid fleet](projects/11-ansible-fleet-config/) | "Identical" servers have drifted; patching is manual | Mutable vs immutable, push vs pull, rolling strategy, role testing, inventory source | Docker lab + VMs |
+
+### Track C: reliability operations across many services (12–17)
+
+These run on the shared **landscape**: a simulated trading platform with 8 services, dependencies, alerts and runbooks,
+all deliberately imperfect. The projects find and fix those flaws.
+
+| # | Project | The problem | Key decisions | Runs on |
+|---|---------|-------------|---------------|---------|
+| 12 | [Incident response and on-call](projects/12-incident-response/) | Chaotic incidents; actions never done; unowned services | Severity model, roles, on-call design, runbook vs automation, postmortem policy | Landscape + game days |
+| 13 | [Toil automation with guardrails](projects/13-toil-automation/) | Hours a week on repetitive manual tasks | What to automate first, safety model, when not to automate, interface | Python |
+| 14 | [Automated alert triage](projects/14-alert-triage-pipeline/) | Bare alerts; one root cause pages five teams | Enrichment, correlation, automation boundary, fail-open, build vs buy | Landscape + Python |
+| 15 | [Monitoring coverage audit](projects/15-monitoring-coverage-audit/) | Nobody knows which services are badly monitored | Minimum standard per tier, white vs black box, report vs enforce, who closes gaps | Landscape + Python |
+| 16 | [Cross-service reliability reporting](projects/16-reliability-reporting/) | "Is reliability getting worse?" has no answer | SLA/SLO/SLI, SLO tooling, trading-hours windows, dependency attribution, report audience | Landscape + Python |
+| 17 | [Reliability governance](projects/17-reliability-governance/) | Weak ownership, noisy alerts, stale runbooks, open actions | Metrics that resist gaming, visibility, escalation, bad-alert policy, review forum | Python (+ data from 12–16) |
+
 ## Start a project in its own repo
 
 Each project is meant to become its own portfolio repo. Copy one out with:
@@ -52,15 +80,18 @@ scripts/new-project-repo.sh 03 ../zero-downtime-deploys
 cd ../zero-downtime-deploys
 ```
 
-The new repo contains the project files at its root, plus `app/` (the shared sample service) and `templates/`.
+The new repo contains the project files at its root, plus `templates/` and the shared directories the project needs
+(listed in its `SHARED` file: `app/` for most of 01–08, `landscape/` for 12–17).
 Inside an extracted repo, Docker Compose and Makefiles find the app at `./app` by default.
 To run a project **inside this roadmap repo** instead, point at the shared app: `APP_DIR=../../app docker compose up`.
 
 ## What's shared
 
 ```
-app/                    # the sample service every project deploys (FastAPI + Postgres)
+app/                    # the sample service projects 02–08 deploy (FastAPI + Postgres)
                         #   /healthz /readyz /metrics /version /items /work, plus failure injection via env vars
+landscape/              # simulated trading platform for projects 12–17: catalog, metrics simulator with
+                        #   fault injection, Prometheus, Alertmanager, runbooks (deliberately imperfect)
 templates/
   adr-template.md       # Architecture Decision Record
   postmortem-template.md
@@ -100,7 +131,7 @@ Keep a short journal of which hints you needed. It's honest evidence of what you
 
 ## Cost and safety
 
-- Projects 03, 04, 07 and 08 run fully locally for free. Projects 01, 05 and 06 have optional AWS parts.
+- Projects 03, 04, 07, 08, 09 and 11–17 run fully locally for free. Projects 01, 05 and 06 have optional AWS parts. Project 10 needs a Linux host (your own, or a small cloud VM).
 - Before any AWS work: set a budget alert (`projects/07-cost-aware-autoscaling/terraform/budgets`), and `terraform destroy` when you stop for the day.
 - Lab shortcuts (Vault dev mode, `app:app` passwords, anonymous Grafana) are marked as such. Never copy them to anything real.
 - Image tags and action versions were current when this was written. Bumping them is part of the work, and Dependabot (project 02) does it for you.

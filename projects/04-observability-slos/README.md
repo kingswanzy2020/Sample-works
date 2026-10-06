@@ -72,6 +72,20 @@ open http://localhost:9090/alerts
 ### Document
 - [ ] Screenshot of the trace that found the latency, the timeline, and the interview story.
 
+## How this project connects
+
+| Direction | Project | What flows |
+|-----------|---------|------------|
+| Uses | `app/` | The service being observed |
+| Feeds | [03 Zero-downtime](../03-zero-downtime-deploys/) | Metrics for automatic canary analysis |
+| Feeds | [09 Kafka](../09-kafka-streaming-reliability/) | Dashboards and alerts for consumer lag and freshness |
+| Feeds | [14 Triage](../14-alert-triage-pipeline/) | Alerting concepts; 14 processes the alerts that rules like these produce |
+| Feeds | [15 Coverage audit](../15-monitoring-coverage-audit/) | What "good monitoring" looks like, which becomes 15's minimum standard |
+| Feeds | [16 Reliability reporting](../16-reliability-reporting/) | SLO concepts; 16 reports many SLOs over time |
+
+**Not in this project:** auditing many services (15), reporting reliability across services (16), processing alerts (14).
+Here you build excellent observability for **one** service.
+
 ## ADRs
 
 | # | Decision | Status |

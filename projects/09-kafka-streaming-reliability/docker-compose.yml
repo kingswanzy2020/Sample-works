@@ -1,0 +1,63 @@
+# 3-broker Kafka (KRaft, no ZooKeeper) + a price-tick producer and consumer.
+# Every message carries a sequence number so you can PROVE loss and duplication, not guess.
+x-kafka: &kafka
+  image: apache/kafka:3.9.0
+  environment: &kafka-env
+    KAFKA_PROCESS_ROLES: broker,controller
+    KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka1:9093,2@kafka2:9093,3@kafka3:9093
+    KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+    KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+    KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+    KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+    CLUSTER_ID: 4L6g3nShT-eMCtK--X86sw
+    KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+    KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+    KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+    KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false" # topics are created deliberately (scripts/create-topic.sh)
+    KAFKA_LOG_DIRS: /var/lib/kafka/data
+
+services:
+  kafka1:
+    <<: *kafka
+    environment: { <<: *kafka-env, KAFKA_NODE_ID: 1, KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka1:9092 }
+  kafka2:
+    <<: *kafka
+    environment: { <<: *kafka-env, KAFKA_NODE_ID: 2, KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka2:9092 }
+  kafka3:
+    <<: *kafka
+    environment: { <<: *kafka-env, KAFKA_NODE_ID: 3, KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka3:9092 }
+
+  # Exposes consumer lag and partition state to Prometheus (wire it into project 04's stack).
+  kafka-exporter:
+    image: danielqsj/kafka-exporter:v1.8.0
+    command: ["--kafka.server=kafka1:9092", "--kafka.server=kafka2:9092", "--kafka.server=kafka3:9092"]
+    ports: ["9308:9308"]
+    depends_on: [kafka1, kafka2, kafka3]
+    restart: on-failure
+
+  producer:
+    build: ./pipeline
+    command: ["python", "producer.py"]
+    profiles: [pipeline]
+    environment:
+      BOOTSTRAP: kafka1:9092,kafka2:9092,kafka3:9092
+      TOPIC: price-ticks
+      RATE: "200"                 # messages per second
+      # DECISION (ADR-0001 / ADR-0002): durability and delivery knobs.
+      ACKS: "all"
+      ENABLE_IDEMPOTENCE: "true"
+    volumes: ["./data:/data"]
+
+  consumer:
+    build: ./pipeline
+    command: ["python", "consumer.py"]
+    profiles: [pipeline]
+    environment:
+      BOOTSTRAP: kafka1:9092,kafka2:9092,kafka3:9092
+      TOPIC: price-ticks
+      GROUP_ID: order-router
+      # DECISION (ADR-0002): when offsets are committed relative to processing.
+      COMMIT_MODE: after_process  # after_process | before_process | auto
+      PROCESS_MS: "0"             # raise it to simulate a slow consumer
+    volumes: ["./data:/data"]

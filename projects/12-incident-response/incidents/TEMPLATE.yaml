@@ -1,0 +1,16 @@
+id:
+title:
+severity:
+game_day: true
+services_impacted: []
+root_cause_service:
+timeline:
+  started:
+  detected:
+  mitigated:
+  resolved:
+detection:
+alerts_fired: []
+runbooks_used: []
+actions: []
+postmortem:

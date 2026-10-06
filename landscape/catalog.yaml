@@ -1,0 +1,84 @@
+# Service catalog for the simulated trading platform.
+#
+# This data is DELIBERATELY IMPERFECT. Projects 15–17 exist to find and fix problems like:
+#   - a tier-1 service with no owner
+#   - runbooks that are missing or stale
+#   - services that have no alerts at all
+# Don't "fix" this file up front. Let your tooling find the problems, then fix them as part of the project.
+#
+# tier: 1 = trading-critical (market hours), 2 = important, 3 = best effort
+# depends_on: what this service needs to work (used for correlation in 14 and attribution in 16)
+
+services:
+  - name: order-gateway
+    tier: 1
+    owner: team-execution
+    oncall: execution-primary
+    runbook: runbooks/order-gateway.md
+    runbook_updated: 2026-08-20
+    depends_on: [risk-engine, kafka, auth]
+
+  - name: price-feed
+    tier: 1
+    owner: team-marketdata
+    oncall: marketdata-primary
+    runbook: runbooks/price-feed.md
+    runbook_updated: 2024-11-02   # stale
+    depends_on: [kafka]
+
+  - name: risk-engine
+    tier: 1
+    owner: ""                      # nobody owns this: a finding for project 17
+    oncall: ""
+    runbook: runbooks/risk-engine.md
+    runbook_updated: 2026-02-14
+    depends_on: [positions-api, postgres]
+
+  - name: positions-api
+    tier: 2
+    owner: team-risk
+    oncall: risk-primary
+    runbook: ""                    # no runbook
+    runbook_updated: ""
+    depends_on: [postgres, kafka]
+
+  - name: auth
+    tier: 2
+    owner: team-platform
+    oncall: platform-primary
+    runbook: ""
+    runbook_updated: ""
+    depends_on: [postgres]
+
+  - name: reporting-batch
+    tier: 3
+    owner: team-data
+    oncall: ""
+    runbook: ""
+    runbook_updated: ""
+    depends_on: [postgres]
+
+  - name: kafka
+    tier: 1
+    kind: platform
+    owner: team-platform
+    oncall: platform-primary
+    runbook: runbooks/kafka.md
+    runbook_updated: 2026-06-30
+    depends_on: []
+
+  - name: postgres
+    tier: 1
+    kind: platform
+    owner: team-platform
+    oncall: platform-primary
+    runbook: runbooks/postgres.md
+    runbook_updated: 2025-09-10
+    depends_on: []
+
+# Trading hours, used by project 16 (reliability measured during market hours) and 13 (market-open readiness).
+trading_hours:
+  timezone: Europe/Amsterdam
+  open: "09:00"
+  close: "17:30"
+  days: [mon, tue, wed, thu, fri]

@@ -1,0 +1,12 @@
+- name: Can we reach and escalate on every server?
+  hosts: all
+  gather_facts: false
+  tasks:
+    - ansible.builtin.ping:
+    - ansible.builtin.command: id -u
+      become: true
+      register: uid
+      changed_when: false
+    - ansible.builtin.assert:
+        that: uid.stdout == "0"
+        quiet: true

@@ -1,0 +1,3 @@
+# Variables shared by every server. What belongs here vs in a role's defaults is a design choice.
+timezone: UTC
+admin_users: []   # who should have accounts on every server?

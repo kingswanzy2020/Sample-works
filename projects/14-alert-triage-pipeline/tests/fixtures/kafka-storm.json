@@ -1,0 +1,17 @@
+{
+  "version": "4",
+  "status": "firing",
+  "receiver": "triage",
+  "groupLabels": {},
+  "commonLabels": {"severity": "page"},
+  "alerts": [
+    {"status": "firing", "labels": {"alertname": "KafkaDegraded", "service": "kafka", "severity": "page"},
+     "annotations": {"summary": "kafka error rate 25%"}, "startsAt": "2026-10-06T09:12:00Z", "fingerprint": "a1"},
+    {"status": "firing", "labels": {"alertname": "HighErrorRate", "service": "price-feed", "severity": "page"},
+     "annotations": {"summary": "price-feed error rate 18%"}, "startsAt": "2026-10-06T09:12:30Z", "fingerprint": "a2"},
+    {"status": "firing", "labels": {"alertname": "HighErrorRate", "service": "order-gateway", "severity": "page"},
+     "annotations": {"summary": "order-gateway error rate 12%"}, "startsAt": "2026-10-06T09:13:00Z", "fingerprint": "a3"},
+    {"status": "firing", "labels": {"alertname": "AnyErrors", "service": "positions-api", "severity": "page"},
+     "annotations": {"summary": "positions-api returned an error"}, "startsAt": "2026-10-06T09:13:10Z", "fingerprint": "a4"}
+  ]
+}

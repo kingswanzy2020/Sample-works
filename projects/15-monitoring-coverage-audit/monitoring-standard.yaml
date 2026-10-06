@@ -1,0 +1,23 @@
+# The minimum monitoring standard: what every service must have, by tier.
+# DECISION (ADR-0001): YOU fill in required_by_tier. The scanner checks services against it.
+#
+# Available check ids (implemented in coverage_audit/checks.py; some are stubs for you to write):
+#   has_metrics          service exposes request metrics that Prometheus scrapes         (implemented)
+#   has_owner            catalog has an owner and an on-call                              (stub)
+#   has_alert_rule       at least one alert rule references the service                   (stub)
+#   alert_has_runbook    every alert for the service has a runbook_url                    (stub)
+#   runbook_fresh        runbook exists and was reviewed within max_runbook_age_days      (stub)
+#   has_synthetic_probe  a black-box probe checks it from outside                         (stub)
+#   has_latency_alert    something alerts on latency, not only errors                     (stub)
+#   has_slo              an SLO is defined for it (project 16)                            (stub)
+# Add your own checks if your standard needs them.
+
+max_runbook_age_days: 180
+
+required_by_tier:
+  1: []
+  2: []
+  3: []
+
+# Platform services (kind: platform in the catalog) may need a different standard. Your call.
+required_for_platform: []

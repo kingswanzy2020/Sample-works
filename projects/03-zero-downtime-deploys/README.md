@@ -72,6 +72,20 @@ Makefile
 | Blue/green | | | | | |
 | Canary | | | | | |
 
+## How this project connects
+
+| Direction | Project | What flows |
+|-----------|---------|------------|
+| Uses | [02 CI/CD](../02-cicd-fast-and-safe/) | Signed, digest-pinned images |
+| Uses | [04 Observability](../04-observability-slos/) | Prometheus metrics for canary analysis (Task 6.2) |
+| Feeds | [08 Platform](../08-internal-developer-platform/) | Probes, preStop and PDB become defaults in the service template |
+| Feeds | [09 Kafka](../09-kafka-streaming-reliability/) | Optional: the cluster where Kafka runs if 09 chooses Strimzi |
+| Feeds | [11 Ansible](../11-ansible-fleet-config/) | Health-gated rollouts: the same idea applied to a fleet of hosts |
+| Feeds | [12 Incidents](../12-incident-response/) | Your break-it experiments make good game-day scenarios |
+| Related, not repeated | [07 Cost](../07-cost-aware-autoscaling/), [10 Latency](../10-linux-performance-latency/) | 07 handles scaling and cost; 10 handles host-level latency. Here: getting new versions out safely |
+
+**Not in this project:** autoscaling (07), building images (02), host tuning (10).
+
 ## ADRs
 
 | # | Decision | Status |
