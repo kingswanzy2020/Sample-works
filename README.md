@@ -1,8 +1,10 @@
-# Sample-works: a DevOps portfolio built on decisions
+# decision-driven-devops
+
+A DevOps portfolio built on decisions, not tool lists.
 
 > **Build. Test. Break. Decide. Improve. Document.**
 
-This repo is a roadmap of eight DevOps projects. Each one starts from a real problem and is built
+This repo is the hub: a roadmap of eight DevOps projects. Each one starts from a real problem and is built
 to answer one question: **"What decisions do I want this project to prove I can make?"**
 
 The goal is to say more than *"I used Docker, Terraform and GitHub Actions"* in an interview. The goal is:
