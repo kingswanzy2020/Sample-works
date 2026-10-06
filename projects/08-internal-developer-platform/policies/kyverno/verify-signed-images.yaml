@@ -1,0 +1,20 @@
+# Only images signed by your CI (project 02, keyless cosign) may run.
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: verify-signed-images
+spec:
+  validationFailureAction: Audit
+  webhookTimeoutSeconds: 30
+  rules:
+    - name: cosign-keyless
+      match:
+        any:
+          - resources: { kinds: [Pod] }
+      verifyImages:
+        - imageReferences: ["ghcr.io/REPLACE_ORG/*"]
+          attestors:
+            - entries:
+                - keyless:
+                    issuer: https://token.actions.githubusercontent.com
+                    subject: "https://github.com/REPLACE_ORG/*"

@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ${{ values.name }}
+  labels: { app: ${{ values.name }}, team: ${{ values.owner }} }
+spec:
+  replicas: 2
+  strategy: { rollingUpdate: { maxSurge: 1, maxUnavailable: 0 } }
+  selector:
+    matchLabels: { app: ${{ values.name }} }
+  template:
+    metadata:
+      labels: { app: ${{ values.name }}, team: ${{ values.owner }} }
+    spec:
+      terminationGracePeriodSeconds: 35
+      securityContext: { runAsNonRoot: true }
+      containers:
+        - name: app
+          image: ghcr.io/REPLACE_ORG/${{ values.name }}@sha256:REPLACED_BY_CD
+          ports: [{ name: http, containerPort: 8000 }]
+          readinessProbe: { httpGet: { path: /readyz, port: http }, periodSeconds: 2 }
+          livenessProbe: { httpGet: { path: /healthz, port: http }, periodSeconds: 10 }
+          lifecycle: { preStop: { exec: { command: ["sleep", "10"] } } }
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits: { memory: 256Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ${{ values.name }}
+spec:
+  selector: { app: ${{ values.name }} }
+  ports: [{ port: 80, targetPort: http }]
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: ${{ values.name }}
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels: { app: ${{ values.name }} }

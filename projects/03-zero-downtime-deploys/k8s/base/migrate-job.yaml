@@ -1,0 +1,18 @@
+# DECISION (ADR-0002): migrations run as a separate Job BEFORE the rollout, not in an
+# init container (which would run once per pod, concurrently).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migrate
+  namespace: zdd
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: sample-service:v1
+          command: ["python", "-m", "src.migrate"]
+          env:
+            - { name: DATABASE_URL, value: "postgresql://app:app@postgres:5432/app" }

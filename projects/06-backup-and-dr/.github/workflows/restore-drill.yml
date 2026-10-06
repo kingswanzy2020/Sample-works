@@ -1,0 +1,31 @@
+name: restore-drill
+
+# DECISION (ADR-0003): an untested backup is not a backup. Drill weekly, automatically.
+on:
+  schedule:
+    - cron: "23 5 * * 1" # Mondays
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  drill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: start stack
+        run: docker compose up -d --build --wait db s3 app
+      - name: seed, back up, then keep writing (simulates data written after the last backup)
+        run: |
+          scripts/seed.sh 200
+          scripts/backup.sh
+          scripts/seed.sh 25
+      - name: restore drill
+        run: RTO_TARGET_SECONDS=300 scripts/restore-drill.sh
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: drill-report
+          path: docs/drills/*.md

@@ -1,0 +1,70 @@
+# Requires Argo Rollouts: https://argo-rollouts.readthedocs.io/en/stable/installation/
+#   kubectl create namespace argo-rollouts
+#   kubectl apply -n argo-rollouts -f https://github.com/argoproj/argo-rollouts/releases/latest/download/install.yaml
+#
+# Without a service mesh or ingress, traffic weight is approximated by replica ratio
+# (1 of 4 pods ≈ 25%). Note this limitation in ADR-0001.
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: app
+  namespace: zdd
+spec:
+  replicas: 4
+  selector:
+    matchLabels: { app: sample }
+  template:
+    metadata:
+      labels: { app: sample }
+    spec:
+      terminationGracePeriodSeconds: 35
+      containers:
+        - name: app
+          image: sample-service:v1
+          ports: [{ name: http, containerPort: 8000 }]
+          env: [{ name: DATABASE_URL, value: "postgresql://app:app@postgres:5432/app" }]
+          readinessProbe: { httpGet: { path: /readyz, port: http }, periodSeconds: 2 }
+          livenessProbe: { httpGet: { path: /healthz, port: http }, periodSeconds: 10 }
+          lifecycle: { preStop: { exec: { command: ["sleep", "10"] } } }
+  strategy:
+    canary:
+      steps:
+        - setWeight: 25
+        - analysis:
+            templates: [{ templateName: error-rate }]
+        - setWeight: 50
+        - pause: { duration: 60s }
+        - setWeight: 100
+---
+# DECISION (ADR-0003): what counts as healthy. This version needs Prometheus (project 04).
+# Until then, replace the analysis step with `pause: {}` and promote manually:
+#   kubectl argo rollouts promote app -n zdd
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: error-rate
+  namespace: zdd
+spec:
+  metrics:
+    - name: error-rate
+      interval: 30s
+      count: 4
+      failureLimit: 1
+      successCondition: result[0] < 0.01
+      provider:
+        prometheus:
+          address: http://prometheus.monitoring.svc:9090
+          query: |
+            sum(rate(http_requests_total{namespace="zdd",status=~"5.."}[1m]))
+            /
+            sum(rate(http_requests_total{namespace="zdd"}[1m]))
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app
+  namespace: zdd
+spec:
+  type: NodePort
+  selector: { app: sample }
+  ports: [{ port: 80, targetPort: http, nodePort: 30080 }]

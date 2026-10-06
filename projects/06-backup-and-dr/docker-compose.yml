@@ -1,0 +1,49 @@
+# Primary DB + S3-compatible object storage (SeaweedFS) + a throwaway restore target.
+# In production the object store is a real S3 bucket in ANOTHER account/region (terraform/backup-bucket).
+services:
+  db:
+    image: postgres:16
+    environment: { POSTGRES_USER: app, POSTGRES_PASSWORD: app, POSTGRES_DB: app }
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U app"], interval: 2s, retries: 15 }
+
+  migrate:
+    build: { context: "${APP_DIR:-./app}" }
+    command: ["python", "-m", "src.migrate"]
+    environment: { DATABASE_URL: "postgresql://app:app@db:5432/app" }
+    depends_on: { db: { condition: service_healthy } }
+
+  app:
+    build: { context: "${APP_DIR:-./app}" }
+    environment: { DATABASE_URL: "postgresql://app:app@db:5432/app", APP_VERSION: dr-lab }
+    ports: ["8000:8000"]
+    depends_on: { migrate: { condition: service_completed_successfully } }
+
+  s3:
+    image: chrislusf/seaweedfs:3.80
+    command: ["server", "-dir=/data", "-s3", "-s3.port=8333", "-s3.config=/etc/seaweedfs/s3.json"]
+    volumes: ["s3data:/data", "./s3/s3.json:/etc/seaweedfs/s3.json:ro"]
+    ports: ["8333:8333"]
+
+  # Tool containers, run on demand by the scripts (`docker compose run --rm awscli ...`).
+  awscli:
+    image: amazon/aws-cli:2.22.0
+    profiles: [tools]
+    environment:
+      AWS_ACCESS_KEY_ID: backup
+      AWS_SECRET_ACCESS_KEY: backup-secret-lab-only
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_ENDPOINT_URL: http://s3:8333
+    volumes: ["./backups:/backups"]
+    depends_on: [s3]
+
+  # The restore target: a fresh, empty Postgres. Lives only during a drill.
+  restore-db:
+    image: postgres:16
+    profiles: [drill]
+    environment: { POSTGRES_USER: app, POSTGRES_PASSWORD: app, POSTGRES_DB: app }
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U app"], interval: 2s, retries: 15 }
+
+volumes:
+  pgdata:
+  s3data:

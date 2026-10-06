@@ -1,0 +1,25 @@
+# Requires metrics-server. On kind:
+#   kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+#   kubectl -n kube-system patch deploy metrics-server --type=json \
+#     -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"}]'
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: app
+  namespace: scale
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: app }
+  minReplicas: 2   # DECISION (ADR-0001): the floor is your idle cost and your cold-start insurance
+  maxReplicas: 12  # the ceiling is your blast radius on the bill
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: { type: Utilization, averageUtilization: 60 } # % of *requests*, so it depends on ADR-0002
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies: [{ type: Percent, value: 100, periodSeconds: 15 }] # can double every 15s
+    scaleDown:
+      stabilizationWindowSeconds: 300 # wait 5 min before removing pods: avoids flapping, costs money
+      policies: [{ type: Pods, value: 1, periodSeconds: 60 }]

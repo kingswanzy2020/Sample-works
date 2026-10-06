@@ -1,0 +1,141 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Cancel superseded runs on the same branch: saves minutes, gives faster feedback.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  IMAGE: ghcr.io/${{ github.repository_owner }}/sample-service
+
+jobs:
+  # DECISION (ADR-0001): skip expensive jobs when only docs change.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      app: ${{ steps.filter.outputs.app }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            app:
+              - 'app/**'
+              - 'pyproject.toml'
+              - '.github/workflows/ci.yml'
+
+  lint:
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/ruff-action@v3
+
+  test:
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          # DECISION (ADR-0002): cache key is the lockfile hash, so a dependency change busts it.
+          cache: pip
+          cache-dependency-path: app/requirements*.txt
+      - run: pip install -r app/requirements-dev.txt
+      - run: pytest -q --junitxml=junit.xml
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit
+          path: junit.xml
+
+  build:
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: write
+      id-token: write # keyless cosign signing
+    outputs:
+      digest: ${{ steps.push.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        if: github.event_name == 'push'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: push
+        uses: docker/build-push-action@v6
+        with:
+          context: app
+          push: ${{ github.event_name == 'push' }}
+          load: ${{ github.event_name != 'push' }}
+          build-args: APP_VERSION=${{ github.sha }}
+          tags: ${{ env.IMAGE }}:${{ github.sha }}
+          # DECISION (ADR-0002): GitHub Actions layer cache. Fast, but scoped per branch, and can go stale.
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          # Attestations need a registry push; the local `load` used on PRs can't hold them.
+          provenance: ${{ github.event_name == 'push' }}
+          sbom: ${{ github.event_name == 'push' }}
+
+      # DECISION (ADR-0003): block on CRITICAL with a fix available; report the rest.
+      - name: scan (blocking)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.IMAGE }}:${{ github.sha }}
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+      - name: scan (report only)
+        if: always()
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.IMAGE }}:${{ github.sha }}
+          severity: HIGH,MEDIUM
+          exit-code: "0"
+          format: table
+
+      - name: SBOM (SPDX)
+        if: github.event_name == 'push'
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.IMAGE }}@${{ steps.push.outputs.digest }}
+          format: spdx-json
+          output-file: sbom.spdx.json
+
+      - uses: sigstore/cosign-installer@v3
+        if: github.event_name == 'push'
+      - name: sign by digest
+        if: github.event_name == 'push'
+        run: cosign sign --yes "${IMAGE}@${{ steps.push.outputs.digest }}"
+
+  # A single required check that always reports, even when jobs were skipped by path filters.
+  # Make THIS the required status check in branch protection.
+  ci-ok:
+    if: always()
+    needs: [changes, lint, test, build]
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          results='${{ toJSON(needs.*.result) }}'
+          echo "$results"
+          if echo "$results" | grep -qE '"(failure|cancelled)"'; then exit 1; fi

@@ -1,0 +1,33 @@
+# One Argo CD Application per gitops/apps/<service>/<env> directory.
+# Adding a service = adding a folder. No ticket to the platform team.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: services
+  namespace: argocd
+spec:
+  goTemplate: true
+  generators:
+    - git:
+        repoURL: https://github.com/REPLACE_ORG/REPLACE_REPO.git
+        revision: main
+        directories:
+          - path: gitops/apps/*/*
+          - path: gitops/apps/*/base
+            exclude: true
+  template:
+    metadata:
+      name: "{{ index .path.segments 2 }}-{{ .path.basename }}"
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/REPLACE_ORG/REPLACE_REPO.git
+        targetRevision: main
+        path: "{{ .path.path }}"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "{{ index .path.segments 2 }}-{{ .path.basename }}"
+      syncPolicy:
+        # DECISION (ADR-0002): self-heal reverts manual kubectl edits (drift), like project 01 but for k8s.
+        automated: { prune: true, selfHeal: true }
+        syncOptions: [CreateNamespace=true]

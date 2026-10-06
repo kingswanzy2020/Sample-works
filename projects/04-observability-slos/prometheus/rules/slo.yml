@@ -1,0 +1,63 @@
+# SLOs for sample-service. Fill in the numbers you chose in ADR-0001.
+#   Availability: 99.5% of non-probe requests succeed (not 5xx), over 30 days.
+#   Latency:      99% of non-probe requests complete in < 250ms.
+# Error budget for availability = 0.5%.
+groups:
+  - name: sli-recording
+    rules:
+      - record: sli:requests:rate5m
+        expr: sum(rate(http_requests_total{route!~"/metrics|/healthz|/readyz"}[5m]))
+      - record: sli:errors:ratio_rate5m
+        expr: |
+          sum(rate(http_requests_total{route!~"/metrics|/healthz|/readyz",status=~"5.."}[5m]))
+          / sum(rate(http_requests_total{route!~"/metrics|/healthz|/readyz"}[5m]))
+      - record: sli:errors:ratio_rate30m
+        expr: |
+          sum(rate(http_requests_total{route!~"/metrics|/healthz|/readyz",status=~"5.."}[30m]))
+          / sum(rate(http_requests_total{route!~"/metrics|/healthz|/readyz"}[30m]))
+      - record: sli:errors:ratio_rate1h
+        expr: |
+          sum(rate(http_requests_total{route!~"/metrics|/healthz|/readyz",status=~"5.."}[1h]))
+          / sum(rate(http_requests_total{route!~"/metrics|/healthz|/readyz"}[1h]))
+      - record: sli:errors:ratio_rate6h
+        expr: |
+          sum(rate(http_requests_total{route!~"/metrics|/healthz|/readyz",status=~"5.."}[6h]))
+          / sum(rate(http_requests_total{route!~"/metrics|/healthz|/readyz"}[6h]))
+      - record: sli:slow:ratio_rate5m
+        expr: |
+          1 - (
+            sum(rate(http_request_duration_seconds_bucket{route!~"/metrics|/healthz|/readyz",le="0.25"}[5m]))
+            / sum(rate(http_request_duration_seconds_count{route!~"/metrics|/healthz|/readyz"}[5m]))
+          )
+
+  # Multi-window, multi-burn-rate alerts (Google SRE workbook, ch. 5).
+  # DECISION (ADR-0002): page on symptoms (budget burn), not causes (CPU).
+  - name: slo-alerts
+    rules:
+      - alert: ErrorBudgetFastBurn
+        # 14.4x burn = 2% of a 30-day budget in 1h. Page someone.
+        expr: sli:errors:ratio_rate1h > (14.4 * 0.005) and sli:errors:ratio_rate5m > (14.4 * 0.005)
+        for: 2m
+        labels: { severity: page }
+        annotations:
+          summary: "sample-service is burning its error budget fast"
+          description: "1h error ratio {{ $value | humanizePercentage }}. Budget gone in ~2 days at this rate."
+      - alert: ErrorBudgetSlowBurn
+        # 6x burn = 5% of budget in 6h. Ticket, not page.
+        expr: sli:errors:ratio_rate6h > (6 * 0.005) and sli:errors:ratio_rate30m > (6 * 0.005)
+        for: 15m
+        labels: { severity: ticket }
+        annotations:
+          summary: "sample-service error budget slow burn"
+      - alert: LatencySLOAtRisk
+        expr: sli:slow:ratio_rate5m > 0.01 and sli:requests:rate5m > 0.5
+        for: 10m
+        labels: { severity: ticket }
+        annotations:
+          summary: "More than 1% of requests are slower than 250ms"
+      - alert: TargetDown
+        expr: up{job="sample-service"} == 0
+        for: 1m
+        labels: { severity: page }
+        annotations:
+          summary: "Prometheus cannot scrape sample-service"
