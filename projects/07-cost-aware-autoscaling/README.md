@@ -3,6 +3,8 @@
 > **Problem:** The cloud bill doubled and nobody can say why. Meanwhile, traffic spikes
 > still cause slowdowns, because capacity is both too high (idle) and too slow to grow (spikes).
 
+**Need help while building?** See [`docs/build-plan.md`](docs/build-plan.md): tasks with a goal and a "done when" check, hints hidden in levels (nudge → concept → docs), and a diagnosis table. It never gives you the full solution.
+
 ## Decisions this project proves you can make
 
 1. **What to scale on:** CPU (lagging) vs request rate or queue depth (leading).

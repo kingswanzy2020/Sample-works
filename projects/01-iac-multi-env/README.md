@@ -6,6 +6,8 @@
 This is the foundation for every later project. The network, database and state
 layout you build here are what projects 02 to 08 deploy onto.
 
+**Need help while building?** See [`docs/build-plan.md`](docs/build-plan.md): tasks with a goal and a "done when" check, hints hidden in levels (nudge → concept → docs), and a diagnosis table. It never gives you the full solution.
+
 ## Decisions this project proves you can make
 
 1. **State layout and blast radius:** one state file, one per environment, or one per component?

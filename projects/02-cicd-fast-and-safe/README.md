@@ -3,6 +3,8 @@
 > **Problem:** CI takes 25 minutes, so developers batch changes and merge less often.
 > Flaky tests get re-run until green. Nobody knows what is inside the images we ship.
 
+**Need help while building?** See [`docs/build-plan.md`](docs/build-plan.md): tasks with a goal and a "done when" check, hints hidden in levels (nudge → concept → docs), and a diagnosis table. It never gives you the full solution.
+
 ## Decisions this project proves you can make
 
 1. **What runs on each change:** everything, or only what changed?
